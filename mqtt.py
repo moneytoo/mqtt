@@ -8,9 +8,12 @@ auto_off_timer = None
 TOPIC_CABINET_DOOR = "zigbee2mqtt/living_room/cabinet/door"
 TOPIC_CABINET_LIGHT = "zigbee2mqtt/living_room/cabinet/light"
 
-def light(client, topic, state):
+def light(client, topic, state, brightness=None):
     print("light")
-    client.publish(f"{topic}/set", state)
+    payload = {"state": state}
+    if brightness is not None:
+        payload["brightness"] = brightness
+    client.publish(f"{topic}/set", json.dumps(payload))
 
 def on_connect(client, userdata, flags, reason_code, properties):
     print(f"Connected with result code {reason_code}")
@@ -29,7 +32,7 @@ def on_message(client, userdata, msg):
                 auto_off_timer.cancel()
         else:
             print("is opened")
-            light(client, TOPIC_CABINET_LIGHT, "ON")
+            light(client, TOPIC_CABINET_LIGHT, "ON", 255)
             if auto_off_timer is not None:
                 auto_off_timer.cancel()
             auto_off_timer = threading.Timer(15 * 60, light, args=[client, TOPIC_CABINET_LIGHT, "OFF"])
