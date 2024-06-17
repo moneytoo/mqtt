@@ -15,6 +15,18 @@ def light(client, topic, state, brightness=None):
         payload["brightness"] = brightness
     client.publish(f"{topic}/set", json.dumps(payload))
 
+def handle_cabinet_door(client, contact, timer):
+    if contact is False:
+        light(client, TOPIC_CABINET_LIGHT, "ON", 255)
+        if timer is not None:
+            timer.cancel()
+        timer = threading.Timer(15 * 60, light, args=[client, TOPIC_CABINET_LIGHT, "OFF"])
+        timer.start()
+    else:
+        light(client, TOPIC_CABINET_LIGHT, "OFF")
+        if timer is not None:
+            timer.cancel()
+
 def on_connect(client, userdata, flags, reason_code, properties):
     print(f"Connected with result code {reason_code}")
     client.subscribe(TOPIC_CABINET_DOOR)
@@ -25,18 +37,8 @@ def on_message(client, userdata, msg):
     if msg.topic == TOPIC_CABINET_DOOR:
         payload = json.loads(msg.payload)
         contact = payload["contact"]
-        if contact is True:
-            print("is closed")
-            light(client, TOPIC_CABINET_LIGHT, "OFF")
-            if auto_off_timer is not None:
-                auto_off_timer.cancel()
-        else:
-            print("is opened")
-            light(client, TOPIC_CABINET_LIGHT, "ON", 255)
-            if auto_off_timer is not None:
-                auto_off_timer.cancel()
-            auto_off_timer = threading.Timer(15 * 60, light, args=[client, TOPIC_CABINET_LIGHT, "OFF"])
-            auto_off_timer.start()
+        handle_cabinet_door(client, contact, auto_off_timer)
+
 
 mqttc = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
 mqttc.on_connect = on_connect
