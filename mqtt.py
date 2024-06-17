@@ -28,6 +28,7 @@ def handle_cabinet_door(client, contact, timer):
         light(client, TOPIC_CABINET_LIGHT, "OFF")
         if timer is not None:
             timer.cancel()
+    return timer
 
 def handle_room_motion(client, topic, timer):
     light(client, topic, "ON", 255)
@@ -35,6 +36,7 @@ def handle_room_motion(client, topic, timer):
         timer.cancel()
     timer = threading.Timer(5 * 60, light, args=[client, topic, "OFF"])
     timer.start()
+    return timer
 
 def on_connect(client, userdata, flags, reason_code, properties):
     print(f"Connected with result code {reason_code}")
@@ -47,12 +49,12 @@ def on_message(client, userdata, msg):
     if msg.topic == TOPIC_CABINET_DOOR:
         payload = json.loads(msg.payload)
         if "contact" in payload:
-            handle_cabinet_door(client, payload["contact"], timer_cabinet)
+            timer_cabinet = handle_cabinet_door(client, payload["contact"], timer_cabinet)
     elif msg.topic == TOPIC_TOILET_MOTION:
         payload = json.loads(msg.payload)
         if "occupancy" in payload:
             if payload["occupancy"]:
-                handle_room_motion(client, TOPIC_TOILET_MOTION, timer_toilet)
+                timer_toilet = handle_room_motion(client, TOPIC_TOILET_MOTION, timer_toilet)
 
 
 mqttc = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
