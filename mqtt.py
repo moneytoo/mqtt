@@ -2,9 +2,7 @@ import paho.mqtt.client as mqtt
 from datetime import datetime, date, time, timezone, timedelta
 import json
 import threading
-from astral.geocoder import database, lookup
-from astral.sun import sun
-import pytz
+from sun_times import SunTimes
 
 TOPIC_CABINET_DOOR = "zigbee2mqtt/living_room/cabinet/door"
 TOPIC_CABINET_LIGHT = "zigbee2mqtt/living_room/cabinet/light"
@@ -18,6 +16,8 @@ LIGHT_OFF_ROOM = 5 * 60
 DIM_DURATION = 20
 
 class Light:
+    sun_times = SunTimes()
+
     def __init__(self, client, topic, off_time):
         self.client = client
         self.topic = topic
@@ -127,17 +127,5 @@ mqttc.connect("localhost", 1883, 60)
 cabinet_light = Light(mqttc, TOPIC_CABINET_LIGHT, LIGHT_OFF_CABINET)
 toilet_light = Light(mqttc, TOPIC_TOILET_LIGHT, LIGHT_OFF_ROOM)
 bathroom_light = Light(mqttc, TOPIC_BATHROOM_LIGHT, LIGHT_OFF_ROOM)
-
-def is_dark():
-    city = lookup("Prague", database())
-    times = sun(city.observer, tzinfo=city.timezone)
-    offset = timedelta(hours=1)
-    now = datetime.now(pytz.timezone(city.timezone))
-    return now < times["sunrise"] + offset or now > times["sunset"] - offset
-
-
-print(is_dark())
-
-
 
 mqttc.loop_forever()
