@@ -1,12 +1,17 @@
 import paho.mqtt.client as mqtt
-from datetime import datetime, date, time, timezone
+from datetime import datetime, date, time, timezone, timedelta
 import json
 import threading
+from astral.geocoder import database, lookup
+from astral.sun import sun
+import pytz
 
 TOPIC_CABINET_DOOR = "zigbee2mqtt/living_room/cabinet/door"
 TOPIC_CABINET_LIGHT = "zigbee2mqtt/living_room/cabinet/light"
 TOPIC_TOILET_MOTION = "zigbee2mqtt/toilet/motion"
 TOPIC_TOILET_LIGHT = "zigbee2mqtt/toilet/light"
+TOPIC_BATHROOM_MOTION = "zigbee2mqtt/bathroom/motion"
+TOPIC_BATHROOM_LIGHT = "zigbee2mqtt/bathroom/light"
 
 LIGHT_OFF_CABINET = 15 * 60
 LIGHT_OFF_ROOM = 5 * 60
@@ -61,8 +66,6 @@ class Light:
         control_light(self.client, self.topic, "OFF")
 
 def control_light(client, topic, state, brightness=None):
-    if brightness is not None:
-        print("light " + str(brightness))
     payload = {"state": state}
     if brightness is not None:
         payload["brightness"] = brightness
@@ -73,10 +76,14 @@ def on_connect(client, userdata, flags, reason_code, properties):
     client.subscribe(TOPIC_CABINET_DOOR)
     #client.subscribe(TOPIC_TOILET_MOTION)
     client.subscribe(TOPIC_TOILET_LIGHT)
+    #client.subscribe(TOPIC_BATHROOM_MOTION)
+    client.subscribe(TOPIC_BATHROOM_LIGHT)
 
 def on_message(client, userdata, msg):
     global timer_cabinet, timer_toilet
     print(msg.topic+" "+str(msg.payload))
+
+    # Cabinet
     if msg.topic == TOPIC_CABINET_DOOR:
         payload = json.loads(msg.payload)
         if "contact" in payload:
@@ -84,10 +91,10 @@ def on_message(client, userdata, msg):
                 cabinet_light.on()
             else:
                 cabinet_light.off()
+
+    # Toilet
     elif msg.topic == TOPIC_TOILET_MOTION:
         payload = json.loads(msg.payload)
-        if "illuminance_lux" in payload:
-            toilet_light.update_lux(payload["illuminance_lux"])
         if "occupancy" in payload:
             if payload["occupancy"]:
                 toilet_light.on()
@@ -97,6 +104,20 @@ def on_message(client, userdata, msg):
             state = payload["state"]
             toilet_light.update_state(state)
 
+    # Bathroom
+    elif msg.topic == TOPIC_BATHROOM_MOTION:
+        payload = json.loads(msg.payload)
+        if "illuminance_lux" in payload:
+            bathroom_light.update_lux(payload["illuminance_lux"])
+        if "occupancy" in payload:
+            if payload["occupancy"]:
+                bathroom_light.on()
+    elif msg.topic == TOPIC_BATHROOM_LIGHT:
+        payload = json.loads(msg.payload)
+        if "state" in payload:
+            state = payload["state"]
+            bathroom_light.update_state(state)
+
 
 mqttc = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
 mqttc.on_connect = on_connect
@@ -105,5 +126,18 @@ mqttc.connect("localhost", 1883, 60)
 
 cabinet_light = Light(mqttc, TOPIC_CABINET_LIGHT, LIGHT_OFF_CABINET)
 toilet_light = Light(mqttc, TOPIC_TOILET_LIGHT, LIGHT_OFF_ROOM)
+bathroom_light = Light(mqttc, TOPIC_BATHROOM_LIGHT, LIGHT_OFF_ROOM)
+
+def is_dark():
+    city = lookup("Prague", database())
+    times = sun(city.observer, tzinfo=city.timezone)
+    offset = timedelta(hours=1)
+    now = datetime.now(pytz.timezone(city.timezone))
+    return now < times["sunrise"] + offset or now > times["sunset"] - offset
+
+
+print(is_dark())
+
+
 
 mqttc.loop_forever()
