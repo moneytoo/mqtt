@@ -55,8 +55,13 @@ class Light:
         self.timer_off.start()
 
     def on_bathroom(self):
+        # During night or low light
+        if self.sun_times.is_night() or self.lux < 150:
+            self.on()
+        # TODO: If light is already on, reset timers
+
         # TODO: sun light check
-        if lux < 150:
+        if self.lux < 150:
             #self.on()
             self.__timers_cancel()
             self.timer_dim = threading.Timer(self.off_time - DIM_DURATION, self.__dim)
