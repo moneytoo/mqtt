@@ -43,8 +43,11 @@ class Light:
         self.lux = lux
 
     def on(self):
+        # Turn on light only if it's not already on.
+        # This is to prevent reseting the light settings (like brightness).
         if self.state is None or self.state == "OFF":
             control_light(self.client, self.topic, "ON", brightness=255)
+        # Light is on now, so start the off timers.
         self.__timers_cancel()
         self.timer_dim = threading.Timer(self.off_time - DIM_DURATION, self.__dim)
         self.timer_off = threading.Timer(self.off_time, self.off)

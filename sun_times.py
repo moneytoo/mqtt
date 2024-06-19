@@ -16,7 +16,6 @@ class SunTimes:
         self.__update_sun_times()
 
     def __update_sun_times(self):
-        print(self.city)
         now = datetime.now(self.timezone)
         current_date = now.date()
         if self.last_update_date != current_date:
