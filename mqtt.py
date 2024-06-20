@@ -35,9 +35,8 @@ def on_message(client, userdata, msg):
     # Toilet
     elif msg.topic == TOPIC_TOILET_MOTION:
         payload = json.loads(msg.payload)
-        if "occupancy" in payload:
-            if payload["occupancy"]:
-                toilet_light.on()
+        if "occupancy" in payload and payload["occupancy"]:
+            toilet_light.on()
     elif msg.topic == TOPIC_TOILET_LIGHT:
         payload = json.loads(msg.payload)
         if "state" in payload:
@@ -49,9 +48,8 @@ def on_message(client, userdata, msg):
         payload = json.loads(msg.payload)
         if "illuminance_lux" in payload:
             bathroom_light.update_lux(payload["illuminance_lux"])
-        if "occupancy" in payload:
-            if payload["occupancy"]:
-                bathroom_light.on()
+        if "occupancy" in payload and payload["occupancy"]:
+            bathroom_light.on_bathroom()
     elif msg.topic == TOPIC_BATHROOM_LIGHT:
         payload = json.loads(msg.payload)
         if "state" in payload:
