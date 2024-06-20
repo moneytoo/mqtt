@@ -12,7 +12,7 @@ TOPIC_BATHROOM_LIGHT = "zigbee2mqtt/bathroom/light"
 LIGHT_OFF_CABINET = 15 * 60
 LIGHT_OFF_ROOM = 5 * 60
 
-def on_connect(client, userdata, flags, reason_code, properties):
+def on_connect(client, _, __, reason_code, ___):
     print(f"Connected with result code {reason_code}")
     client.subscribe(TOPIC_CABINET_DOOR)
     #client.subscribe(TOPIC_TOILET_MOTION)
@@ -20,7 +20,7 @@ def on_connect(client, userdata, flags, reason_code, properties):
     #client.subscribe(TOPIC_BATHROOM_MOTION)
     client.subscribe(TOPIC_BATHROOM_LIGHT)
 
-def on_message(client, userdata, msg):
+def on_message(_, __, msg):
     print(msg.topic+" "+str(msg.payload))
 
     # Cabinet
