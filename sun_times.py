@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta
-from astral import LocationInfo
 from astral.sun import sun
 from astral.geocoder import database, lookup
 import pytz
