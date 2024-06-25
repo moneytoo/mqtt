@@ -28,6 +28,7 @@ def on_connect(client, _, __, reason_code, ___):
     client.subscribe(TOPIC_BATHROOM_LIGHT)
 
     client.subscribe(TOPIC_REMOTE_MARCEL)
+    client.subscribe(TOPIC_MARCEL_LIGHT)
 
 def on_message(_, __, msg):
     print(msg.topic+" "+str(msg.payload))
@@ -69,6 +70,10 @@ def on_message(_, __, msg):
         if "action" in payload:
             action = payload["action"]
             remote.action(action)
+    elif msg.topic == TOPIC_MARCEL_LIGHT:
+        if "state" in payload:
+            state = payload["state"]
+            remote.update_state(state)
 
 
 
