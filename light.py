@@ -8,19 +8,18 @@ DIM_DURATION = 20
 class Light:
     sun_times = SunTimes()
 
-    def __init__(self, client, topic, off_time, topic_door=None):
+    def __init__(self, client, topic, states, off_time, topic_door=None):
         self.client = client
         self.topic = topic
+        self.states = states
         self.off_time = off_time
         self.topic_door = topic_door
         self.timer_dim = None
         self.timer_off = None
-        self.state = None
         self.lux = 0
         self.door_closed = False
 
-        self.client.publish(f"{self.topic}/get", json.dumps({"state":""}))
-        self.client.publish(f"{self.topic_door}/get", json.dumps({"contact":False}))
+        #self.client.publish(f"{self.topic_door}/get", json.dumps({"contact":False}))
 
     def __timers_cancel(self):
         if self.timer_dim is not None:
@@ -42,9 +41,6 @@ class Light:
     def __dim(self):
         control_light(self.client, self.topic, "ON", brightness=64)  # 25% of 255
 
-    def update_state(self, state):
-        self.state = state
-
     def update_lux(self, lux):
         self.lux = lux
 
@@ -58,7 +54,7 @@ class Light:
     def on(self):
         # Turn on light only if it's not already on.
         # This is to prevent reseting the light settings (like brightness).
-        if self.state is None or self.state == "OFF":
+        if not self.states.is_on(self.topic):
             control_light(self.client, self.topic, "ON", brightness=255)
         # Light is on now
         # No timers if door is closed
@@ -73,7 +69,7 @@ class Light:
         if self.sun_times.is_night() or self.lux < 150:
             # Turn on as well as start the off timers
             self.on()
-        elif self.state is not None and self.state == "ON":
+        if self.states.is_on(self.topic):
             self.__timers_restart()
 
     def off(self):
